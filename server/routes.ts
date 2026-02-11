@@ -164,14 +164,7 @@ export async function registerRoutes(
   app.get(api.auth.googleCallback.path, 
     passport.authenticate("google", { failureRedirect: "/login" }),
     (req, res) => {
-      const user = req.user as any;
-      if (!user.isApproved) {
-        req.logout(() => {
-          res.redirect("/login?error=pending_approval");
-        });
-      } else {
-        res.redirect("/");
-      }
+      res.redirect("/");
     }
   );
 
@@ -286,13 +279,19 @@ export async function registerRoutes(
   app.post(api.payments.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const input = api.payments.create.input.parse(req.body);
+      const user = req.user as any;
+      // Inject staffId from session if not provided or if not admin
+      const paymentData = { ...req.body };
+      if (!paymentData.staffId || user.role !== 'admin') {
+        paymentData.staffId = user._id.toString();
+      }
+
+      const input = api.payments.create.input.parse(paymentData);
       
       // Check ownership
       const student = await storage.getStudent(input.studentId);
       if (!student) return res.status(404).json({ message: "Student not found" });
       
-      const user = req.user as any;
       if (user.role !== 'admin' && student.staffId.toString() !== user._id.toString()) return res.sendStatus(403);
 
       const payment = await storage.addPayment(input);
@@ -304,6 +303,38 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
+      res.sendStatus(500);
+    }
+  });
+
+  app.get('/api/reports', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { startDate, endDate, staffId } = req.query;
+      const user = req.user as any;
+      
+      const sDate = startDate ? new Date(startDate as string) : new Date(0);
+      const eDate = endDate ? new Date(endDate as string) : new Date();
+      
+      // Staff can only see their own reports
+      const targetStaffId = user.role === 'admin' ? (staffId as string) : user._id.toString();
+      
+      const report = await storage.getReportStats(targetStaffId, sDate, eDate);
+      res.json(report);
+    } catch (err) {
+      console.error("[Report Error]", err);
+      res.sendStatus(500);
+    }
+  });
+
+  app.get(api.payments.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      const payments = await storage.getAllPayments(user.role === 'admin' ? undefined : user._id);
+      res.json(payments);
+    } catch (err) {
+      console.error("[Payments List Error]", err);
       res.sendStatus(500);
     }
   });
@@ -364,6 +395,38 @@ export async function registerRoutes(
       res.sendStatus(200);
     } catch (err) {
       console.error("[Approve Staff Error]", err);
+      res.sendStatus(500);
+    }
+  });
+
+  app.patch(api.admin.updateStaff.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      if (user.role !== 'admin') return res.sendStatus(403);
+      
+      const input = api.admin.updateStaff.input.parse(req.body);
+      const staff = await storage.updateStaff(req.params.id, input);
+      res.json(staff);
+    } catch (err) {
+      console.error("[Update Staff Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
+  app.delete(api.admin.deleteStaff.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      if (user.role !== 'admin') return res.sendStatus(403);
+      
+      await storage.deleteStaff(req.params.id);
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[Delete Staff Error]", err);
       res.sendStatus(500);
     }
   });

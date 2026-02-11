@@ -194,13 +194,13 @@ export default function CategoriesPage() {
                     <CreditCard className="h-4 w-4 text-slate-400" />
                     {cat.name}
                   </TableCell>
-                  <TableCell>${cat.monthlyFee}</TableCell>
-                  <TableCell>${cat.yearlyFee}</TableCell>
-                  <TableCell>${cat.term1Fee}</TableCell>
-                  <TableCell>${cat.term2Fee}</TableCell>
-                  <TableCell>${cat.term3Fee}</TableCell>
+                  <TableCell>₹{cat.monthlyFee}</TableCell>
+                  <TableCell>₹{cat.yearlyFee}</TableCell>
+                  <TableCell>₹{cat.term1Fee}</TableCell>
+                  <TableCell>₹{cat.term2Fee}</TableCell>
+                  <TableCell>₹{cat.term3Fee}</TableCell>
                   <TableCell className="text-right font-bold text-primary">
-                    ${total.toLocaleString()}
+                    ₹{total.toLocaleString()}
                   </TableCell>
                 </TableRow>
               );

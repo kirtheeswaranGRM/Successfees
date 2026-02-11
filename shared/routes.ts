@@ -121,6 +121,13 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    list: {
+      method: 'GET' as const,
+      path: '/api/payments' as const,
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
   },
   dashboard: {
     summary: {
@@ -136,11 +143,21 @@ export const api = {
           yearlyScheduled: z.number(),
           yearlyCollected: z.number(),
           yearlyBalance: z.number(),
+          newJoinsThisMonth: z.number(),
+          paidStudents: z.number(),
+          remainingStudents: z.number(),
           chartData: z.array(z.object({
             name: z.string(),
             amount: z.number(),
           })),
         }),
+      },
+    },
+    reports: {
+      method: 'GET' as const,
+      path: '/api/reports' as const,
+      responses: {
+        200: z.any(),
       },
     },
   },
@@ -156,6 +173,27 @@ export const api = {
     approveStaff: {
       method: 'POST' as const,
       path: '/api/admin/approve-staff/:id' as const,
+      responses: {
+        200: z.void(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    updateStaff: {
+      method: 'PATCH' as const,
+      path: '/api/admin/staff/:id' as const,
+      input: z.object({
+        name: z.string().optional(),
+        subject: z.string().optional(),
+        isApproved: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.any(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    deleteStaff: {
+      method: 'DELETE' as const,
+      path: '/api/admin/staff/:id' as const,
       responses: {
         200: z.void(),
         403: errorSchemas.unauthorized,

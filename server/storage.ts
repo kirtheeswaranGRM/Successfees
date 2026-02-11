@@ -15,6 +15,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllStaff(): Promise<User[]>;
   approveStaff(id: string): Promise<void>;
+  updateStaff(id: string, update: Partial<User>): Promise<User>;
+  deleteStaff(id: string): Promise<void>;
 
   // Category
   getCategories(staffId?: string): Promise<Category[]>; 
@@ -30,6 +32,7 @@ export interface IStorage {
   // Payment
   addPayment(payment: InsertPayment): Promise<Payment>;
   getPaymentsByStudent(studentId: string): Promise<Payment[]>;
+  getAllPayments(staffId?: string): Promise<any[]>;
 
   // Dashboard
   getDashboardStats(staffId: string): Promise<{
@@ -40,7 +43,12 @@ export interface IStorage {
     weeklyCollected: number;
     yearlyScheduled: number;
     yearlyCollected: number;
+    newJoinsThisMonth: number;
+    paidStudents: number;
+    remainingStudents: number;
   }>;
+
+  getReportStats(staffId: string | undefined, startDate: Date, endDate: Date): Promise<any>;
   
   getAdminStats(): Promise<{
     totalCollected: number;
@@ -79,6 +87,19 @@ export class DatabaseStorage implements IStorage {
 
   async approveStaff(id: string): Promise<void> {
     await UserModel.findByIdAndUpdate(id, { isApproved: true });
+  }
+
+  async updateStaff(id: string, update: Partial<User>): Promise<User> {
+    const user = await UserModel.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    if (!user) throw new Error("Staff member not found");
+    return { ...user, _id: user._id.toString() } as any;
+  }
+
+  async deleteStaff(id: string): Promise<void> {
+    // Delete their students, payments, and categories? 
+    // For now just the user to avoid orphan data issues if needed, but safer to keep data or reassign.
+    // User request just said "remove", usually implies deleting the user.
+    await UserModel.findByIdAndDelete(id);
   }
 
   async getCategories(staffId?: string): Promise<Category[]> {
@@ -161,6 +182,37 @@ export class DatabaseStorage implements IStorage {
     return payments.map(p => ({ ...p, _id: p._id.toString() })) as any;
   }
 
+  async getAllPayments(staffId?: string): Promise<any[]> {
+    const match = staffId ? { "student.staffId": new mongoose.Types.ObjectId(staffId) } : {};
+    
+    return await PaymentModel.aggregate([
+      {
+        $lookup: {
+          from: "students",
+          localField: "studentId",
+          foreignField: "_id",
+          as: "student"
+        }
+      },
+      { $unwind: "$student" },
+      { $match: match },
+      { $sort: { date: -1 } },
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          type: 1,
+          date: 1,
+          notes: 1,
+          subjects: 1,
+          studentName: "$student.name",
+          studentId: "$student._id",
+          staffId: 1
+        }
+      }
+    ]);
+  }
+
   async getDashboardStats(staffId: string) {
     const studentCount = await StudentModel.countDocuments({ staffId });
     
@@ -229,6 +281,21 @@ export class DatabaseStorage implements IStorage {
       { $group: { _id: null, sum: { $sum: "$amount" } } }
     ]);
 
+    const newJoinsThisMonth = await StudentModel.countDocuments({ 
+      staffId: new mongoose.Types.ObjectId(staffId), 
+      registrationDate: { $gte: startOfMonth } 
+    });
+
+    const paidStudents = await StudentModel.countDocuments({
+      staffId: new mongoose.Types.ObjectId(staffId),
+      balance: { $lte: 0 }
+    });
+
+    const remainingStudents = await StudentModel.countDocuments({
+      staffId: new mongoose.Types.ObjectId(staffId),
+      balance: { $gt: 0 }
+    });
+
     return {
       totalStudents: studentCount,
       totalCollected: totalCollectedAgg[0]?.sum || 0,
@@ -236,7 +303,65 @@ export class DatabaseStorage implements IStorage {
       monthlyCollected: monthlyCollectedAgg[0]?.sum || 0,
       weeklyCollected: weeklyCollectedAgg[0]?.sum || 0,
       yearlyScheduled: financial[0]?.totalFees || 0,
-      yearlyCollected: totalCollectedAgg[0]?.sum || 0
+      yearlyCollected: totalCollectedAgg[0]?.sum || 0,
+      newJoinsThisMonth,
+      paidStudents,
+      remainingStudents
+    };
+  }
+
+  async getReportStats(staffId: string | undefined, startDate: Date, endDate: Date) {
+    const match: any = {
+      date: { $gte: startDate, $lte: endDate }
+    };
+
+    if (staffId) {
+      match["staffId"] = new mongoose.Types.ObjectId(staffId);
+    }
+
+    const payments = await PaymentModel.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "students",
+          localField: "studentId",
+          foreignField: "_id",
+          as: "student"
+        }
+      },
+      { $unwind: "$student" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "staffId",
+          foreignField: "_id",
+          as: "staff"
+        }
+      },
+      { $unwind: "$staff" },
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          type: 1,
+          date: 1,
+          notes: 1,
+          subjects: 1,
+          studentName: "$student.name",
+          staffName: "$staff.name"
+        }
+      },
+      { $sort: { date: -1 } }
+    ]);
+
+    const summary = payments.reduce((acc: any, p: any) => {
+      acc.totalCollected += p.amount;
+      return acc;
+    }, { totalCollected: 0, count: payments.length });
+
+    return {
+      payments,
+      summary
     };
   }
 

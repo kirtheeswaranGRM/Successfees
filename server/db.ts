@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-const mongoUri = "mongodb+srv://successfees:successfees123@successfees.fbzb1ih.mongodb.net/?appName=Successfeest2";
+dotenv.config();
+
+const mongoUri = process.env.MONGODB_URI || "mongodb+srv://successfees:successfees123@successfees.fbzb1ih.mongodb.net/?appName=Successfeest2";
 
 mongoose.connect(mongoUri)
   .then(() => console.log("Connected to MongoDB"))
@@ -30,6 +33,7 @@ const studentSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  subjects: { type: String, required: true },
   totalFees: { type: Number, required: true },
   balance: { type: Number, required: true },
   registrationDate: { type: Date, default: Date.now },
@@ -37,9 +41,11 @@ const studentSchema = new mongoose.Schema({
 
 const paymentSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+  staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
   type: { type: String, required: true },
+  subjects: { type: String },
   notes: { type: String },
 });
 

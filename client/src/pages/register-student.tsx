@@ -47,6 +47,7 @@ export default function RegisterStudent() {
     defaultValues: {
       name: "",
       phone: "",
+      subjects: "",
       categoryId: "",
       totalFees: 0,
       staffId: user?._id || "",
@@ -113,6 +114,21 @@ export default function RegisterStudent() {
                     <FormControl>
                       <Input placeholder="+1 234 567 890" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subjects"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subjects</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Maths, Science, etc." {...field} />
+                    </FormControl>
+                    <FormDescription>List the subjects the student is enrolling for.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

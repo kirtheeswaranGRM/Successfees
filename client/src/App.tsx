@@ -13,6 +13,7 @@ import StudentDetails from "@/pages/student-details";
 import RegisterStudent from "@/pages/register-student";
 import CategoriesPage from "@/pages/categories";
 import AdminPage from "@/pages/admin";
+import PaymentHistoryPage from "@/pages/payment-history";
 
 function Router() {
   return (
@@ -35,6 +36,9 @@ function Router() {
       </Route>
       <Route path="/categories">
         <LayoutShell><CategoriesPage /></LayoutShell>
+      </Route>
+      <Route path="/payments">
+        <LayoutShell><PaymentHistoryPage /></LayoutShell>
       </Route>
       <Route path="/admin">
         <LayoutShell><AdminPage /></LayoutShell>

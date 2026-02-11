@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -8,22 +8,60 @@ import {
   LogOut, 
   Menu,
   X,
-  CreditCard
+  CreditCard,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
-  const [location] = useLocation();
+  const { user, logout, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  if (!user) return <>{children}</>;
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/auth");
+    }
+  }, [user, isLoading, setLocation]);
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) return null;
+
+  if (!user.isApproved && user.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-center space-y-6">
+          <div className="mx-auto w-24 h-24 overflow-hidden rounded-2xl shadow-lg border-4 border-white mb-6">
+            <img src="/logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900">Account Pending Approval</h2>
+          <p className="text-slate-600">
+            Welcome, <strong>{user.name}</strong>! Your staff account has been created, but it requires administrator approval before you can access the portal.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800 text-sm">
+            Please contact the administrator to approve your access.
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => logout()}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Sign Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Students", icon: Users, href: "/students" },
     { label: "Fee Categories", icon: CreditCard, href: "/categories" },
+    { label: "Payment Records", icon: History, href: "/payments" },
     ...(user.role === "admin" ? [
       { label: "Admin Panel", icon: Settings, href: "/admin" }
     ] : []),

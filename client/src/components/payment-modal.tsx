@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CreditCard, DollarSign } from "lucide-react";
+import { CreditCard, IndianRupee } from "lucide-react";
 import { type StudentWithDetails } from "@shared/schema";
 
 const formSchema = insertPaymentSchema.extend({
@@ -50,6 +50,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
       studentId: student._id,
       amount: 0,
       type: "monthly",
+      subjects: student.subjects || "",
       notes: "",
     },
   });
@@ -81,7 +82,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
           <DialogTitle>Record Payment</DialogTitle>
           <DialogDescription>
             Add a new payment record for <span className="font-semibold text-primary">{student.name}</span>.
-            Current Balance: <span className="font-mono text-destructive">${student.balance}</span>
+            Current Balance: <span className="font-mono text-destructive">₹{student.balance}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -92,12 +93,26 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount ($)</FormLabel>
+                  <FormLabel>Amount (₹)</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input type="number" className="pl-9" placeholder="0.00" {...field} />
                     </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="subjects"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subjects Paying For</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Maths, Science" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

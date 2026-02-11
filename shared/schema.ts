@@ -15,6 +15,7 @@ export const insertUserSchema = z.object({
   password: z.string().optional(),
   role: z.string().default("staff"),
   name: z.string(),
+  subject: z.string().optional(),
   googleId: z.string().optional(),
   isApproved: z.boolean().default(false),
 });
@@ -34,14 +35,17 @@ export const insertStudentSchema = z.object({
   phone: z.string(),
   categoryId: z.string(), // Category ID
   staffId: z.string(), // Assigned staff
+  subjects: z.string(),
   totalFees: z.number(),
   balance: z.number().optional(),
 });
 
 export const insertPaymentSchema = z.object({
   studentId: z.string(),
+  staffId: z.string(), // Added staffId to record who took the payment
   amount: z.number(),
   type: z.string(), // 'monthly' | 'yearly' | 'term'
+  subjects: z.string().optional(), // Added subjects for payment
   notes: z.string().optional(),
 });
 

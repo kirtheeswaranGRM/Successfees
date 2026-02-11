@@ -117,11 +117,11 @@ export default function StudentsPage() {
                         {student.category.name}
                       </Badge>
                     </TableCell>
-                    <TableCell>${student.totalFees.toLocaleString()}</TableCell>
-                    <TableCell className="text-emerald-600 font-medium">${paid.toLocaleString()}</TableCell>
+                    <TableCell>₹{student.totalFees.toLocaleString()}</TableCell>
+                    <TableCell className="text-emerald-600 font-medium">₹{paid.toLocaleString()}</TableCell>
                     <TableCell>
                       <span className={student.balance > 0 ? "text-rose-600 font-bold" : "text-slate-400"}>
-                        ${student.balance.toLocaleString()}
+                        ₹{student.balance.toLocaleString()}
                       </span>
                     </TableCell>
                     <TableCell>
