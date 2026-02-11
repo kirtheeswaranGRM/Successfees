@@ -1,0 +1,43 @@
+Build a complete full-stack TypeScript web application on Replit for "SUCCESS ACADEMY" student fees management system. Use Node.js with Express backend, React frontend with Tailwind CSS for responsive UI (prioritize mobile-first compact design that works perfectly on any mobile and scales to desktop), MongoDB with Mongoose for database (use Replit Database or connect to MongoDB Atlas if needed). Include PDF generation using a library like pdf-lib or jsPDF for student receipts with SUCCESS ACADEMY logo (use a simple text-based logo or embed a base64 image placeholder for "SUCCESS ACADEMY" in bold). Make the UI extremely easy to use, intuitive, with clean cards, buttons, and minimal navigation. Ensure fully responsive design with Tailwind, compact on mobile (e.g., hamburger menu, stacked layouts, touch-friendly buttons).
+Core Requirements:
+Authentication System:
+Splash page: Full-screen with SUCCESS ACADEMY logo/branding, tagline "Efficient Fee Management", fade-in animation, button to "Login as Staff/Admin".
+Login page: Simple form with username/password fields, "SUCCESS ACADEMY" header. Dummy credentials:
+Staff 1-10: username "staff1" to "staff10", password "staff100" for all (each staff has isolated access to their own data).
+Admin: username "admin", password "admin123" (full access to all staff data).
+After login, redirect to role-specific home page. Use JWT or session-based auth. Staff see only their data; admin sees everything.
+Database Schemas (MongoDB with Mongoose models):
+Staff: { username: string (unique), password: hashed string, name: string, totalCollected: number (fees collected by this staff) }
+Categories: { name: string (e.g., "XII CBSE", "XI Stateboard"), createdBy: staffId, feeStructure: { monthly: number, yearly: number, term1: number, term2: number, term3: number } } – staff creates categories like classes/standards.
+Students: { name: string, phone: string, categoryId: ObjectId, staffId: ObjectId, totalFees: number, paidInstallments: [{ date: Date, amount: number, type: "monthly|yearly|term" }], balance: number, registrationDate: Date }
+Pre-populate 10 staff users on first run.
+Staff Home Page (after staff login):
+Sidebar navigation (collapsible on mobile): Dashboard, Register Student, Create Category, Student Data.
+Dashboard: Summary cards showing:
+This month: # students registered, total fees collected, total balance outstanding.
+This week: fees collected.
+This year: total scheduled fees, total collected, overall balance.
+Charts (simple bar/pie using Recharts) for monthly/yearly collections. Filter by week/month/year buttons.
+Register Student: Form to select/create category, enter student name, phone, assign fees based on category structure (auto-calculate total). Save to DB under this staff.
+Create Category: Form for category name (e.g., "XII CBSE"), set fee amounts: monthly installment, yearly total, or thrice-yearly (term1/2/3) – staff decides schedule type.
+Student Data: Table of all this staff's students (name, phone, category, total fees, balance, paid count). Columns: Update (edit fees/payments), Delete, Download PDF. Search/filter by name/category. Show balance prominently. For each student, track monthly/yearly/thrice-yearly installments paid.
+Student Operations:
+Update: Modal to add payment installment (select type: monthly/yearly/term, amount, date), recalculate balance.
+Delete student.
+PDF Download/Send: For each student, generate downloadable PDF receipt with:
+SUCCESS ACADEMY logo/header.
+Student name, phone, category.
+Fee structure breakdown.
+Paid installments list (date, amount, type).
+Total paid, balance due.
+"Send to Parent" button (simulate email or show phone SMS preview).
+Admin Page (separate login redirect):
+Full overview table: All staff (1-10), their # students, total fees collected this month/year, grand totals.
+Charts for overall academy collections.
+Ability to view any staff's students/dashboard data.
+Technical Stack & Setup:
+Backend: Express.js, TypeScript, Mongoose, CORS, bcrypt for passwords, jsonwebtoken.
+Frontend: React with TypeScript, Tailwind CSS, React Router, Axios for API calls, Recharts for charts, jsPDF/pdf-lib for PDFs.
+API Endpoints: /api/login, /api/categories (CRUD per staff), /api/students (CRUD per staff), /api/dashboard/summary (staff-specific), /api/admin/staff-summary, /api/students/:id/pdf.
+Responsive: Mobile-first (Tailwind classes: sm:, md:, lg:), hamburger menu on mobile, full-width cards, large touch buttons.
+Seed data: On startup, create 10 staff and sample categories/students for testing.
