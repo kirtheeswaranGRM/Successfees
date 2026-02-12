@@ -76,6 +76,24 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/categories/:id' as const,
+      input: insertCategorySchema.partial(),
+      responses: {
+        200: z.any(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/categories/:id' as const,
+      responses: {
+        200: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
   },
   students: {
     list: {
@@ -235,6 +253,18 @@ export const api = {
     clearDatabase: {
       method: 'POST' as const,
       path: '/api/admin/clear-database' as const,
+      input: z.object({
+        password: z.string(),
+      }),
+      responses: {
+        200: z.void(),
+        401: errorSchemas.unauthorized,
+        403: errorSchemas.unauthorized,
+      },
+    },
+    clearCategories: {
+      method: 'POST' as const,
+      path: '/api/admin/clear-categories' as const,
       input: z.object({
         password: z.string(),
       }),

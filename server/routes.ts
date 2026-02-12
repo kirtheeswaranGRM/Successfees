@@ -38,12 +38,16 @@ export async function registerRoutes(
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "secret",
-      resave: false,
+      resave: true,
       saveUninitialized: false,
+      rolling: true,
       store: new SessionStore({
         checkPeriod: 86400000,
       }),
-      cookie: { secure: app.get("env") === "production" || process.env.NODE_ENV === "production" },
+      cookie: { 
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        secure: app.get("env") === "production" || process.env.NODE_ENV === "production" 
+      },
     })
   );
 
@@ -95,15 +99,22 @@ export async function registerRoutes(
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          const picture = profile.photos && profile.photos[0] ? profile.photos[0].value : undefined;
           let user = await storage.getUserByGoogleId(profile.id);
+          
           if (!user) {
             user = await storage.createUser({
               googleId: profile.id,
               name: profile.displayName,
               role: "staff",
+              picture: picture,
               isApproved: false // Admin must approve
             });
+          } else if (picture && user.picture !== picture) {
+            // Update picture if it changed
+            user = await storage.updateStaff(user._id, { picture });
           }
+          
           return done(null, user);
         } catch (err) {
           console.error("[Google Auth Error]", err);
@@ -226,6 +237,62 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.categories.update.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      const categories = await storage.getCategories(user.role === 'admin' ? undefined : user._id);
+      const category = categories.find(c => c._id === req.params.id);
+      
+      if (!category) return res.sendStatus(404);
+      
+      // Staff can only edit their own categories, Admin can edit any
+      if (user.role !== 'admin' && category.createdBy.toString() !== user._id.toString()) {
+        return res.sendStatus(403);
+      }
+
+      const input = api.categories.update.input.parse(req.body);
+      
+      // Prevent non-admins from setting isGlobal
+      if (user.role !== 'admin' && input.isGlobal !== undefined) {
+        delete input.isGlobal;
+      }
+
+      const updatedCategory = await storage.updateCategory(req.params.id, input);
+      res.json(updatedCategory);
+    } catch (err) {
+      console.error("[Category Update Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
+  app.delete(api.categories.delete.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      const categories = await storage.getCategories(user.role === 'admin' ? undefined : user._id);
+      const category = categories.find(c => c._id === req.params.id);
+      
+      if (!category) return res.sendStatus(404);
+      
+      if (user.role !== 'admin' && category.createdBy.toString() !== user._id.toString()) {
+        return res.sendStatus(403);
+      }
+
+      await storage.deleteCategory(req.params.id);
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[Category Delete Error]", err);
+      if (err instanceof Error && err.message.includes("students are assigned")) {
+        return res.status(400).json({ message: err.message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
   // Students
   app.get(api.students.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -329,6 +396,7 @@ export async function registerRoutes(
       
       if (user.role !== 'admin' && student.staffId.toString() !== user._id.toString()) return res.sendStatus(403);
 
+      // Process payment
       const payment = await storage.addPayment(input);
       await storage.updateStudentBalance(input.studentId, input.amount);
       
@@ -410,7 +478,8 @@ export async function registerRoutes(
           staff: s,
           studentCount: stats.totalStudents,
           collectedThisMonth: stats.monthlyCollected,
-          collectedThisYear: stats.yearlyCollected
+          collectedThisYear: stats.yearlyCollected,
+          totalBalance: stats.totalBalance
         };
       }));
       
@@ -507,6 +576,34 @@ export async function registerRoutes(
       console.error("[Clear Database Error]", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
+  app.post(api.admin.clearCategories.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      if (user.role !== 'admin') return res.sendStatus(403);
+
+      const { password } = api.admin.clearCategories.input.parse(req.body);
+      
+      // Verify admin password
+      const admin = await storage.getUser(user._id);
+      if (!admin || !admin.password || !(await comparePasswords(password, admin.password))) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+
+      await storage.clearAllCategories();
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[Clear Categories Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      if (err instanceof Error && err.message.includes("students are still in the database")) {
+        return res.status(400).json({ message: err.message });
       }
       res.sendStatus(500);
     }

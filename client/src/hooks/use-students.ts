@@ -39,7 +39,10 @@ export function useCreateStudent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create student");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create student");
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -61,7 +64,10 @@ export function useDeleteStudent() {
     mutationFn: async (id: string) => {
       const url = buildUrl(api.students.delete.path, { id });
       const res = await fetch(url, { method: api.students.delete.method });
-      if (!res.ok) throw new Error("Failed to delete student");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete student");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.students.list.path] });
@@ -83,7 +89,10 @@ export function useUpdateStudent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to update student");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update student");
+      }
       return await res.json();
     },
     onSuccess: (_, variables) => {
@@ -109,7 +118,10 @@ export function useAddPayment() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to record payment");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to record payment");
+      }
       return await res.json();
     },
     onSuccess: (_, variables) => {

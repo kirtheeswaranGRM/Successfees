@@ -17,6 +17,7 @@ export const insertUserSchema = z.object({
   name: z.string(),
   subject: z.string().optional(),
   googleId: z.string().optional(),
+  picture: z.string().optional(),
   isApproved: z.boolean().default(false),
 });
 
@@ -28,6 +29,7 @@ export const insertCategorySchema = z.object({
   term1Fee: z.number().default(0),
   term2Fee: z.number().default(0),
   term3Fee: z.number().default(0),
+  isGlobal: z.boolean().default(false),
 });
 
 export const insertStudentSchema = z.object({
@@ -58,6 +60,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Category = z.infer<typeof insertCategorySchema> & { _id: string };
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type UpdateCategory = Partial<InsertCategory>;
 
 export type Student = z.infer<typeof insertStudentSchema> & { _id: string, registrationDate: Date, balance: number };
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -93,4 +96,5 @@ export type StaffSummary = {
   studentCount: number;
   collectedThisMonth: number;
   collectedThisYear: number;
+  totalBalance: number;
 };

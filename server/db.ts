@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: "staff" },
   name: { type: String, required: true },
   googleId: { type: String, unique: true, sparse: true },
+  picture: { type: String },
   isApproved: { type: Boolean, default: false },
 });
 
@@ -38,6 +39,7 @@ const categorySchema = new mongoose.Schema({
   term1Fee: { type: Number, default: 0 },
   term2Fee: { type: Number, default: 0 },
   term3Fee: { type: Number, default: 0 },
+  isGlobal: { type: Boolean, default: false },
 });
 
 const studentSchema = new mongoose.Schema({

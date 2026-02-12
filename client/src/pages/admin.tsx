@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShieldAlert, TrendingUp, CheckCircle, Clock, Settings2, Trash2, Save, BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ export default function AdminPage() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [clearDbPassword, setClearDbPassword] = useState("");
   const [isClearingDb, setIsClearingDb] = useState(false);
+  const [clearCatPassword, setClearCatPassword] = useState("");
+  const [isClearingCats, setIsClearingCats] = useState(false);
 
   if (user && user.role !== "admin") {
     setLocation("/summary");
@@ -32,20 +34,15 @@ export default function AdminPage() {
 
   const clearDatabaseMutation = useMutation({
     mutationFn: async (password: string) => {
-      const res = await fetch(api.admin.clearDatabase.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to clear database");
-      }
+      await apiRequest("POST", api.admin.clearDatabase.path, { password });
     },
     onSuccess: () => {
       setIsClearingDb(false);
       setClearDbPassword("");
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: [api.students.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.payments.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.dashboard.summary.path] });
+      queryClient.invalidateQueries({ queryKey: [api.admin.summary.path] });
       toast({ title: "Database Cleared", description: "All student and payment records have been deleted." });
     },
     onError: (error: any) => {
@@ -57,14 +54,30 @@ export default function AdminPage() {
     }
   });
 
+  const clearCategoriesMutation = useMutation({
+    mutationFn: async (password: string) => {
+      await apiRequest("POST", api.admin.clearCategories.path, { password });
+    },
+    onSuccess: () => {
+      setIsClearingCats(false);
+      setClearCatPassword("");
+      queryClient.invalidateQueries({ queryKey: [api.categories.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.dashboard.summary.path] });
+      queryClient.invalidateQueries({ queryKey: [api.admin.summary.path] });
+      toast({ title: "Categories Cleared", description: "All fee categories have been deleted." });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to clear categories",
+        variant: "destructive" 
+      });
+    }
+  });
+
   const resetPasswordMutation = useMutation({
     mutationFn: async (password: string) => {
-      const res = await fetch(api.admin.resetPassword.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) throw new Error("Failed to reset password");
+      await apiRequest("POST", api.admin.resetPassword.path, { password });
     },
     onSuccess: () => {
       setIsResettingPassword(false);
@@ -83,7 +96,7 @@ export default function AdminPage() {
   const { data: staffSummary, isLoading } = useQuery<any[]>({
     queryKey: [api.admin.summary.path],
     queryFn: async () => {
-      const res = await fetch(api.admin.summary.path);
+      const res = await fetch(api.admin.summary.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch admin data");
       return await res.json();
     },
@@ -91,10 +104,7 @@ export default function AdminPage() {
 
   const approveMutation = useMutation({
     mutationFn: async (staffId: string) => {
-      const res = await fetch(buildUrl(api.admin.approveStaff.path, { id: staffId }), {
-        method: "POST"
-      });
-      if (!res.ok) throw new Error("Failed to approve staff");
+      await apiRequest("POST", buildUrl(api.admin.approveStaff.path, { id: staffId }));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.admin.summary.path] });
@@ -102,17 +112,13 @@ export default function AdminPage() {
         title: "Staff Approved",
         description: "The staff member can now log in and access the portal."
       });
+      setLocation("/summary");
     }
   });
 
   const updateStaffMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: any }) => {
-      const res = await fetch(buildUrl(api.admin.updateStaff.path, { id }), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to update staff");
+      const res = await apiRequest("PATCH", buildUrl(api.admin.updateStaff.path, { id }), data);
       return await res.json();
     },
     onSuccess: () => {
@@ -124,13 +130,11 @@ export default function AdminPage() {
 
   const deleteStaffMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(buildUrl(api.admin.deleteStaff.path, { id }), {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete staff");
+      await apiRequest("DELETE", buildUrl(api.admin.deleteStaff.path, { id }));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.admin.summary.path] });
+      queryClient.invalidateQueries({ queryKey: [api.categories.list.path] });
       setEditingStaff(null);
       toast({ title: "Staff Removed", description: "Staff member has been deleted." });
     }
@@ -149,13 +153,14 @@ export default function AdminPage() {
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   const handleDownloadSummary = () => {
-    const headers = ["Staff Name", "Subject", "Students", "Monthly Collection", "Yearly Total"];
+    const headers = ["Staff Name", "Subject", "Students", "Monthly Collection", "Yearly Total", "Outstanding Balance"];
     const rows = staffSummary?.map(s => [
       s.staff.name,
       s.staff.subject || "N/A",
       s.studentCount,
       s.collectedThisMonth,
-      s.collectedThisYear
+      s.collectedThisYear,
+      s.totalBalance
     ]);
     
     let csvContent = "data:text/csv;charset=utf-8," 
@@ -248,6 +253,46 @@ export default function AdminPage() {
                   disabled={clearDatabaseMutation.isPending || !clearDbPassword}
                 >
                   {clearDatabaseMutation.isPending ? "Clearing..." : "Confirm Delete All"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isClearingCats} onOpenChange={setIsClearingCats}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" className="gap-2">
+                <Trash2 className="h-4 w-4" /> Clear Categories
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="text-destructive flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" /> Danger Zone: Clear Categories
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <p className="text-sm text-slate-500">
+                  This will <strong>permanently delete all fee categories</strong>. 
+                  <br /><br />
+                  <span className="text-rose-600 font-bold">Important:</span> You must <strong>Clear Students</strong> first before categories can be removed.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="cat-password">Verify Admin Password</Label>
+                  <Input 
+                    id="cat-password" 
+                    type="password"
+                    placeholder="Enter your password to confirm"
+                    value={clearCatPassword} 
+                    onChange={(e) => setClearCatPassword(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => clearCategoriesMutation.mutate(clearCatPassword)}
+                  disabled={clearCategoriesMutation.isPending || !clearCatPassword}
+                >
+                  {clearCategoriesMutation.isPending ? "Clearing..." : "Confirm Delete Categories"}
                 </Button>
               </div>
             </DialogContent>
@@ -349,9 +394,13 @@ export default function AdminPage() {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 border-2 border-primary/10">
-                    <AvatarFallback className="bg-primary/5 text-primary font-bold">
-                      {stat.staff.name.charAt(0)}
-                    </AvatarFallback>
+                    {stat.staff.picture ? (
+                      <img src={stat.staff.picture} alt={stat.staff.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                        {stat.staff.name.charAt(0)}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div>
                     <CardTitle className="text-lg">{stat.staff.name}</CardTitle>
@@ -441,6 +490,10 @@ export default function AdminPage() {
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-slate-500">Month Collection</span>
                       <span className="font-bold text-emerald-600">₹{stat.collectedThisMonth.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">Outstanding Balance</span>
+                      <span className="font-bold text-rose-600">₹{(stat.totalBalance || 0).toLocaleString()}</span>
                     </div>
                   </div>
 

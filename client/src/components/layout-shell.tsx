@@ -9,13 +9,14 @@ import {
   Menu,
   X,
   CreditCard,
-  History
+  History,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, refetch } = useAuth();
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -45,13 +46,21 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800 text-sm">
             Please contact the administrator to approve your access.
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => logout()}
-          >
-            <LogOut className="mr-2 h-4 w-4" /> Sign Out
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button 
+              className="w-full gap-2 shadow-lg shadow-primary/20"
+              onClick={() => refetch()}
+            >
+              <RefreshCw className="h-4 w-4" /> Refresh Status
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => logout()}
+            >
+              <LogOut className="mr-2 h-4 w-4" /> Sign Out
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -118,8 +127,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           <div className="mt-auto">
             <div className="bg-white/5 rounded-xl p-4 border border-white/5">
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
-                  {user.name.charAt(0)}
+                <div className="h-10 w-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold">
+                  {user.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-secondary-foreground">{user.name.charAt(0)}</span>
+                  )}
                 </div>
                 <div className="overflow-hidden">
                   <p className="font-medium text-sm truncate">{user.name}</p>
@@ -142,6 +155,17 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto h-screen relative">
+        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-10">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => window.location.reload()}
+            title="Refresh Page"
+            className="rounded-full shadow-md bg-white hover:bg-slate-50 border-slate-200"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="max-w-7xl mx-auto p-4 md:p-8">
           {children}
         </div>

@@ -21,6 +21,9 @@ export interface IStorage {
   // Category
   getCategories(staffId?: string): Promise<Category[]>; 
   createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, update: Partial<Category>): Promise<Category>;
+  deleteCategory(id: string): Promise<void>;
+  clearAllCategories(): Promise<void>;
 
   // Student
   getStudents(staffId?: string): Promise<StudentWithDetails[]>;
@@ -98,14 +101,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStaff(id: string): Promise<void> {
-    // Delete their students, payments, and categories? 
-    // For now just the user to avoid orphan data issues if needed, but safer to keep data or reassign.
-    // User request just said "remove", usually implies deleting the user.
+    const studentIds = await StudentModel.find({ staffId: id }).distinct('_id');
+    await PaymentModel.deleteMany({ studentId: { $in: studentIds } });
+    await StudentModel.deleteMany({ staffId: id });
+    await CategoryModel.deleteMany({ createdBy: id, isGlobal: false });
     await UserModel.findByIdAndDelete(id);
   }
 
   async getCategories(staffId?: string): Promise<Category[]> {
-    const query = staffId ? { createdBy: staffId } : {};
+    const query = staffId ? { $or: [{ createdBy: staffId }, { isGlobal: true }] } : {};
     const categories = await CategoryModel.find(query).lean();
     return categories.map(c => ({ ...c, _id: c._id.toString() })) as any;
   }
@@ -115,6 +119,31 @@ export class DatabaseStorage implements IStorage {
     await newCategory.save();
     const obj = newCategory.toObject();
     return { ...obj, _id: obj._id.toString() } as any;
+  }
+
+  async updateCategory(id: string, update: Partial<Category>): Promise<Category> {
+    const category = await CategoryModel.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    if (!category) throw new Error("Category not found");
+    return { ...category, _id: category._id.toString() } as any;
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    // Check if any students are using this category
+    const studentCount = await StudentModel.countDocuments({ categoryId: id });
+    if (studentCount > 0) {
+      throw new Error(`Cannot delete category: ${studentCount} students are assigned to it`);
+    }
+    await CategoryModel.findByIdAndDelete(id);
+  }
+
+  async clearAllCategories(): Promise<void> {
+    // This is a destructive operation, usually handled with students clear too or independently
+    // Check if any students exist first?
+    const studentCount = await StudentModel.countDocuments({});
+    if (studentCount > 0) {
+      throw new Error(`Cannot clear categories: ${studentCount} students are still in the database. Clear students first.`);
+    }
+    await CategoryModel.deleteMany({});
   }
 
   async getStudents(staffId?: string): Promise<StudentWithDetails[]> {

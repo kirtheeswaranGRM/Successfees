@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Lock, UserCog } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, UserCog, RefreshCw } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from "lucide-react";
@@ -54,6 +54,17 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => window.location.reload()}
+          title="Refresh Page"
+          className="rounded-full shadow-md bg-white/80 backdrop-blur hover:bg-slate-50 border-slate-200"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
       {/* Background decoration */}
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
