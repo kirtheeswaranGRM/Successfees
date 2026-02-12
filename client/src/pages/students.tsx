@@ -32,8 +32,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function StudentsPage() {
   const { data: students, isLoading } = useStudents();
@@ -41,6 +42,7 @@ export default function StudentsPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [, setLocation] = useLocation();
+  const isMobile = useIsMobile();
 
   const filteredStudents = students?.filter((student: any) => 
     student.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -48,26 +50,26 @@ export default function StudentsPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 md:space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Students</h1>
-          <p className="text-slate-500 mt-1">Manage enrollments and fee status.</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Students</h1>
+          <p className="text-xs md:text-sm text-slate-500 mt-0.5 md:mt-1">Manage enrollments and fee status.</p>
         </div>
         <Link href="/students/new">
-          <Button className="shadow-lg shadow-primary/25 rounded-xl">
+          <Button className="shadow-lg shadow-primary/25 rounded-xl w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" /> Register New Student
           </Button>
         </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex gap-4">
-          <div className="relative flex-1 max-w-sm">
+        <div className="p-3 md:p-4 border-b border-slate-100 bg-slate-50/50 flex gap-4">
+          <div className="relative flex-1 md:max-w-sm">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by name or phone..." 
-              className="pl-9 bg-white"
+              placeholder="Search students..." 
+              className="pl-9 bg-white h-9 md:h-10 text-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -79,6 +81,48 @@ export default function StudentsPage() {
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
+          </div>
+        ) : isMobile ? (
+          <div className="divide-y divide-slate-100">
+            {filteredStudents?.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                No students found.
+              </div>
+            )}
+            {filteredStudents?.map((student: any) => {
+              const paid = student.totalFees - student.balance;
+              const progress = (paid / student.totalFees) * 100;
+              return (
+                <div 
+                  key={student._id} 
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                  onClick={() => setLocation(`/students/${student._id}`)}
+                >
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-slate-900 truncate">{student.name}</h3>
+                      <Badge variant="outline" className="text-[10px] px-1.5 h-4 font-normal bg-white shrink-0">
+                        {student.category.name}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span>{student.phone}</span>
+                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                      <span className={student.balance > 0 ? "text-rose-600 font-semibold" : "text-emerald-600"}>
+                        Bal: ₹{student.balance.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${progress === 100 ? "bg-emerald-500" : "bg-primary"}`} 
+                        style={{ width: `${progress}%` }} 
+                      />
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-300 shrink-0" />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <Table>
@@ -191,3 +235,4 @@ export default function StudentsPage() {
     </div>
   );
 }
+

@@ -4,20 +4,22 @@ import { PaymentModal } from "@/components/payment-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, User, Phone, Calendar, Download, FileText } from "lucide-react";
+import { ArrowLeft, User, Phone, Calendar, Download, FileText, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function StudentDetails() {
   const [match, params] = useRoute("/students/:id");
+  const isMobile = useIsMobile();
   const id = params?.id || "";
   const { data: student, isLoading } = useStudent(id);
 
-  if (isLoading) return <div className="p-8"><Skeleton className="h-96 w-full rounded-xl" /></div>;
+  if (isLoading) return <div className="p-4 md:p-8"><Skeleton className="h-96 w-full rounded-xl" /></div>;
   if (!student) return <div className="p-8 text-center text-muted-foreground">Student not found</div>;
 
-  const generateReceipt = () => {
+  const getPDF = () => {
     const doc = new jsPDF();
     const primaryColor: [number, number, number] = [220, 38, 38]; // Professional Red matching logo
     const secondaryColor: [number, number, number] = [51, 65, 85]; // Slate 700
@@ -175,87 +177,124 @@ export default function StudentDetails() {
     doc.setLineWidth(2);
     doc.line(20, pageHeight - 10, 190, pageHeight - 10);
 
+    return doc;
+  };
+
+  const generateReceipt = () => {
+    const doc = getPDF();
     doc.save(`${student.name.replace(/\s+/g, '_')}_Receipt.pdf`);
+  };
+
+  const shareReceipt = async () => {
+    const doc = getPDF();
+    const pdfBlob = doc.output('blob');
+    const fileName = `${student.name.replace(/\s+/g, '_')}_Receipt.pdf`;
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Fee Receipt',
+          text: `Fee Receipt for ${student.name}`,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error("Error sharing:", err);
+        }
+      }
+    } else {
+      // Fallback: Try to open WhatsApp with text if file share fails
+      const text = `Fee Receipt for ${student.name}. Please download from the portal.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
   };
 
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
-        <Link href="/students">
-          <Button variant="outline" size="icon" className="rounded-full">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">{student.name}</h1>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-            <span className="flex items-center gap-1"><User className="h-3 w-3" /> ID: {student._id.substring(student._id.length - 6).toUpperCase()}</span>
-            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {student.phone}</span>
-            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Registered: {format(new Date(student.registrationDate || ""), "PP")}</span>
+    <div className="space-y-4 md:space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/students">
+            <Button variant="outline" size="icon" className="rounded-full h-8 w-8 md:h-10 md:w-10">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl md:text-3xl font-display font-bold text-slate-900">{student.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">
+              <span className="flex items-center gap-1"><User className="h-3 w-3" /> ID: {student._id.substring(student._id.length - 6).toUpperCase()}</span>
+              <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {student.phone}</span>
+              {!isMobile && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Registered: {format(new Date(student.registrationDate || ""), "PP")}</span>}
+            </div>
           </div>
         </div>
-        <div className="ml-auto flex gap-3">
-          <Button variant="outline" onClick={generateReceipt}>
-            <Download className="mr-2 h-4 w-4" /> Download PDF
+        <div className="flex items-center gap-2 md:ml-auto">
+          <Button variant="outline" size={isMobile ? "sm" : "default"} onClick={generateReceipt} className="flex-1 md:flex-none">
+            <Download className={isMobile ? "h-4 w-4" : "mr-2 h-4 w-4"} /> 
+            {!isMobile && "Download PDF"}
+          </Button>
+          <Button variant="outline" size={isMobile ? "sm" : "default"} onClick={shareReceipt} className="flex-1 md:flex-none">
+            <Share2 className={isMobile ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+            {!isMobile && "Share"}
           </Button>
           <PaymentModal student={student} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Financial Overview Card */}
         <Card className="md:col-span-1 shadow-md border-none bg-slate-900 text-white">
-          <CardHeader>
-            <CardTitle className="text-white font-display">Fee Summary</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-white font-display text-lg md:text-xl">Fee Summary</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
             <div className="flex justify-between items-center py-2 border-b border-white/10">
-              <span className="text-slate-400">Total Fees</span>
-              <span className="font-bold text-lg">₹{student.totalFees.toLocaleString()}</span>
+              <span className="text-slate-400 text-sm md:text-base">Total Fees</span>
+              <span className="font-bold text-base md:text-lg">₹{student.totalFees.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-white/10">
-              <span className="text-slate-400">Total Paid</span>
-              <span className="font-bold text-lg text-emerald-400">₹{(student.totalFees - student.balance).toLocaleString()}</span>
+              <span className="text-slate-400 text-sm md:text-base">Total Paid</span>
+              <span className="font-bold text-base md:text-lg text-emerald-400">₹{(student.totalFees - student.balance).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center py-4">
-              <span className="text-slate-400 font-medium">Balance Due</span>
-              <span className="font-bold text-3xl text-rose-400">₹{student.balance.toLocaleString()}</span>
+            <div className="flex justify-between items-center py-2 md:py-4">
+              <span className="text-slate-400 font-medium text-sm md:text-base">Balance Due</span>
+              <span className="font-bold text-2xl md:text-3xl text-rose-400">₹{student.balance.toLocaleString()}</span>
             </div>
-            <div className="bg-white/10 p-4 rounded-xl">
-              <p className="text-sm font-medium mb-1 text-slate-300">Category Plan</p>
-              <p className="font-bold text-lg">{student.category.name}</p>
+            <div className="bg-white/10 p-3 md:p-4 rounded-xl">
+              <p className="text-xs md:text-sm font-medium mb-0.5 md:mb-1 text-slate-300">Category Plan</p>
+              <p className="font-bold text-base md:text-lg">{student.category.name}</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Payment History */}
         <Card className="md:col-span-2 shadow-sm border-slate-200">
-          <CardHeader>
-            <CardTitle>Payment History</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-lg md:text-xl">Payment History</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
             {student.payments.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p>No payments recorded yet</p>
+              <div className="text-center py-8 md:py-12 text-muted-foreground bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <FileText className="h-8 w-8 md:h-10 md:w-10 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No payments recorded yet</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {student.payments.map((payment: any) => (
-                  <div key={payment._id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+                  <div key={payment._id} className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm md:text-base">
                         ₹
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 capitalize">{payment.type} Payment</p>
-                        <p className="text-xs text-slate-500">{format(new Date(payment.date || ""), "PPP")}</p>
+                        <p className="font-medium text-sm md:text-base text-slate-900 capitalize">{payment.type} Payment</p>
+                        <p className="text-[10px] md:text-xs text-slate-500">{format(new Date(payment.date || ""), "PPP")}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-emerald-600">+₹{payment.amount}</p>
-                      {payment.notes && <p className="text-xs text-slate-400 max-w-[150px] truncate">{payment.notes}</p>}
+                      <p className="font-bold text-sm md:text-base text-emerald-600">+₹{payment.amount}</p>
+                      {payment.notes && <p className="text-[10px] md:text-xs text-slate-400 max-w-[100px] md:max-w-[150px] truncate">{payment.notes}</p>}
                     </div>
                   </div>
                 ))}
@@ -267,3 +306,4 @@ export default function StudentDetails() {
     </div>
   );
 }
+

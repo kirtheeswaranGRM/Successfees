@@ -179,7 +179,7 @@ export async function registerRoutes(
       callbackURL: callbackURL
     } as any)(req, res, next);
   }, (req, res) => {
-    res.redirect("/");
+    res.redirect("/summary");
   });
 
   app.post(api.auth.logout.path, (req, res) => {

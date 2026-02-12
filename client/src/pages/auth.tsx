@@ -30,7 +30,7 @@ export default function AuthPage() {
   }, []);
 
   if (user) {
-    setLocation("/dashboard");
+    setLocation("/summary");
     return null;
   }
 
@@ -44,7 +44,7 @@ export default function AuthPage() {
 
   function onSubmit(data: z.infer<typeof loginSchema>) {
     login(data, {
-      onSuccess: () => setLocation("/dashboard"),
+      onSuccess: () => setLocation("/summary"),
     });
   }
 

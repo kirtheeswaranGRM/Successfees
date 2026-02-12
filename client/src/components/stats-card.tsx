@@ -32,28 +32,29 @@ export function StatsCard({
 
   return (
     <Card className={cn("overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300", className)}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-            <h3 className="text-2xl font-bold font-display tracking-tight">{value}</h3>
+      <CardContent className="p-3 md:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] md:text-sm font-medium text-muted-foreground mb-0.5 md:mb-1 truncate">{title}</p>
+            <h3 className="text-base md:text-2xl font-bold font-display tracking-tight truncate">{value}</h3>
           </div>
-          <div className={cn("p-3 rounded-xl", colors[color])}>
-            <Icon className="h-6 w-6" />
+          <div className={cn("p-1.5 md:p-3 rounded-lg md:rounded-xl flex-shrink-0", colors[color])}>
+            <Icon className="h-4 w-4 md:h-6 md:w-6" />
           </div>
         </div>
         {trend && (
-          <div className="mt-4 flex items-center text-sm">
+          <div className="mt-2 md:mt-4 flex items-center text-[10px] md:text-sm">
             <span className={cn(
-              "font-medium mr-2 px-1.5 py-0.5 rounded",
+              "font-medium mr-1 md:mr-2 px-1 py-0.5 rounded",
               trendUp ? "text-emerald-700 bg-emerald-100" : "text-rose-700 bg-rose-100"
             )}>
               {trendUp ? "↑" : "↓"} {trend}
             </span>
-            <span className="text-muted-foreground">vs last month</span>
+            <span className="text-muted-foreground hidden md:inline">vs last month</span>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
