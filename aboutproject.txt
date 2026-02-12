@@ -1,0 +1,36 @@
+# Success Academy Fees Management System
+
+## Project Overview
+This project is a comprehensive Fee Management System designed for Success Academy. It allows administrators and staff to manage students, track fee payments, and generate official receipts.
+
+## Key Features
+- **Student Management**: Add, view, and delete students.
+- **Category Management**: Define fee structures (Monthly, Yearly, Term-wise) for different categories.
+- **Payment Tracking**: Record payments with details like amount, type, subjects, and payment method.
+- **PDF Receipt Generation**: Generate professional, official fee receipts for students.
+- **Dashboard & Reports**: View collection statistics and staff performance summaries.
+- **Authentication**: Secure login using local credentials (Admin) and Google OAuth (Staff).
+
+## Tech Stack
+- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI, Vite.
+- **Backend**: Node.js, Express.
+- **Database**: MongoDB (using Mongoose/Storage abstraction).
+- **Authentication**: Passport.js (Local & Google Strategies).
+- **PDF Generation**: jsPDF, jsPDF-AutoTable.
+- **State Management**: TanStack Query (React Query).
+
+## Environment Variables
+The following environment variables are used in the project:
+- `MONGODB_URI`: Connection string for MongoDB.
+- `PORT`: Port on which the server runs (default: 5000).
+- `SESSION_SECRET`: Secret key for session management.
+- `BASE_URL`: Base URL of the application (used for OAuth callbacks).
+- `GOOGLE_CLIENT_ID`: Google OAuth Client ID.
+- `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret.
+
+## How it was done
+1. **Database Schema**: Defined using Zod for validation and MongoDB for persistence.
+2. **REST API**: Built with Express to handle authentication, student data, and payments.
+3. **Frontend UI**: Responsive dashboard built with React and Tailwind CSS.
+4. **Integration**: Connected frontend to backend using TanStack Query for efficient data fetching and updates.
+5. **Receipt System**: Custom PDF generation logic using jsPDF to create official academy receipts.

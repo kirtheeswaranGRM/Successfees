@@ -20,11 +20,65 @@ export default function AdminPage() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [clearDbPassword, setClearDbPassword] = useState("");
+  const [isClearingDb, setIsClearingDb] = useState(false);
 
   if (user && user.role !== "admin") {
     setLocation("/summary");
     return null;
   }
+
+  const clearDatabaseMutation = useMutation({
+    mutationFn: async (password: string) => {
+      const res = await fetch(api.admin.clearDatabase.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to clear database");
+      }
+    },
+    onSuccess: () => {
+      setIsClearingDb(false);
+      setClearDbPassword("");
+      queryClient.invalidateQueries();
+      toast({ title: "Database Cleared", description: "All student and payment records have been deleted." });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to clear database",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (password: string) => {
+      const res = await fetch(api.admin.resetPassword.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) throw new Error("Failed to reset password");
+    },
+    onSuccess: () => {
+      setIsResettingPassword(false);
+      setNewPassword("");
+      toast({ title: "Success", description: "Admin password has been updated." });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to reset password",
+        variant: "destructive" 
+      });
+    }
+  });
 
   const { data: staffSummary, isLoading } = useQuery<any[]>({
     queryKey: [api.admin.summary.path],
@@ -128,6 +182,77 @@ export default function AdminPage() {
         </div>
         
         <div className="flex gap-4">
+          <Dialog open={isResettingPassword} onOpenChange={setIsResettingPassword}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Settings2 className="h-4 w-4" /> Reset Password
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Reset Admin Password</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    placeholder="Min 6 characters"
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  className="w-full"
+                  onClick={() => resetPasswordMutation.mutate(newPassword)}
+                  disabled={resetPasswordMutation.isPending || newPassword.length < 6}
+                >
+                  Update Password
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isClearingDb} onOpenChange={setIsClearingDb}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" className="gap-2">
+                <Trash2 className="h-4 w-4" /> Clear Students
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="text-destructive flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" /> Danger Zone: Clear Database
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <p className="text-sm text-slate-500">
+                  This will <strong>permanently delete all student records and payment history</strong>. 
+                  Roll numbers for new students will start from 001 again.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-password">Verify Admin Password</Label>
+                  <Input 
+                    id="admin-password" 
+                    type="password"
+                    placeholder="Enter your password to confirm"
+                    value={clearDbPassword} 
+                    onChange={(e) => setClearDbPassword(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => clearDatabaseMutation.mutate(clearDbPassword)}
+                  disabled={clearDatabaseMutation.isPending || !clearDbPassword}
+                >
+                  {clearDatabaseMutation.isPending ? "Clearing..." : "Confirm Delete All"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button variant="outline" className="gap-2" onClick={handleDownloadSummary}>
             <Download className="h-4 w-4" /> Export Summary
           </Button>

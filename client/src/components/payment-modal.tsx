@@ -50,6 +50,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
       studentId: student._id,
       amount: "" as any,
       type: "monthly",
+      method: "Cash",
       subjects: student.subjects || "",
       notes: "",
     },
@@ -63,6 +64,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
           studentId: student._id,
           amount: "" as any,
           type: "monthly",
+          method: "Cash",
           notes: "",
         });
       },
@@ -137,6 +139,28 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
                       <SelectItem value="yearly">Yearly Fee</SelectItem>
                       <SelectItem value="registration">Registration</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="GPay">GPay</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -1,0 +1,44 @@
+# Success Fees Management - Project Documentation
+
+## 1. Project Overview
+A full-stack, enterprise-grade Fee Management System built with TypeScript. It is designed to track student enrollments, fee categories, and payment histories with real-time analytics for staff and admins.
+
+## 2. Core Features
+- **Student Management**: Register students with custom ID generation (YearClassRollNo).
+- **Category System**: Flexible fee structures (Monthly, Yearly, Term-wise) per class/category.
+- **Payment Tracking**: Record partial or full payments with automatic balance updates.
+- **Dashboard & Analytics**: Global and category-wise financial summaries.
+- **Role-Based Access**: 
+  - **Admin**: Full control over staff, database clearing, and global stats.
+  - **Staff**: Manage their assigned students and record payments.
+- **Authentication**: Dual login via Local (Admin) and Google OAuth2 (Staff).
+- **Pretty Logging**: Color-coded server-side logs for easy debugging.
+
+## 3. Technology Stack
+### Frontend (Client)
+- **React (Vite)**: For a fast, modern UI development experience.
+- **Tailwind CSS**: For responsive and modern styling.
+- **TanStack Query (React Query)**: For efficient data fetching and caching.
+- **Wouter**: Lightweight routing.
+- **Lucide React**: High-quality icon set.
+- **Framer Motion**: Smooth UI animations and transitions.
+- **Recharts**: Data visualization for dashboard graphs.
+
+### Backend (Server)
+- **Node.js & Express**: Scalable server architecture.
+- **MongoDB & Mongoose**: NoSQL database for flexible data modeling.
+- **Passport.js**: Secure authentication management.
+- **Zod**: Schema validation for both frontend and backend (Single Source of Truth).
+- **Esbuild**: High-performance TypeScript bundling.
+
+## 4. Architecture Detail
+- **`shared/`**: Contains Zod schemas and route definitions used by both client and server to ensure type safety.
+- **`server/storage.ts`**: Implements the Repository pattern (`IStorage` interface) for all database operations.
+- **`server/db.ts`**: Handles Mongoose connections and model definitions.
+- **`client/src/hooks/`**: Custom hooks for students, categories, and payments to encapsulate API logic.
+
+## 5. Implementation Notes for Coders
+- **ID Generation**: Uses `Year + ClassShortName + RollNo` (e.g., 26XII001). The RollNo is category-specific and resets every year.
+- **State Management**: React Query handles all server state; no complex global state (Redux/Zustand) is needed.
+- **Logging**: The server uses a custom `log` function in `index.ts` with ANSI escape codes for colors and truncated JSON for clarity.
+- **Security**: Passwords are hashed using `crypto.scrypt`. Admin verification is required for destructive operations like clearing the database.

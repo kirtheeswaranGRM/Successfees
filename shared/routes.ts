@@ -102,6 +102,21 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/students/:id' as const,
+      input: z.object({
+        name: z.string().optional(),
+        phone: z.string().optional(),
+        subjects: z.string().optional(),
+        totalFees: z.number().optional(),
+        balance: z.number().optional(),
+      }),
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
     delete: {
       method: 'DELETE' as const,
       path: '/api/students/:id' as const,
@@ -146,6 +161,13 @@ export const api = {
           newJoinsThisMonth: z.number(),
           paidStudents: z.number(),
           remainingStudents: z.number(),
+          categoryStats: z.array(z.object({
+            categoryName: z.string(),
+            studentCount: z.number(),
+            totalFees: z.number(),
+            totalBalance: z.number(),
+            totalCollected: z.number(),
+          })).optional(),
           chartData: z.array(z.object({
             name: z.string(),
             amount: z.number(),
@@ -196,6 +218,29 @@ export const api = {
       path: '/api/admin/staff/:id' as const,
       responses: {
         200: z.void(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    resetPassword: {
+      method: 'POST' as const,
+      path: '/api/admin/reset-password' as const,
+      input: z.object({
+        password: z.string().min(6),
+      }),
+      responses: {
+        200: z.void(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    clearDatabase: {
+      method: 'POST' as const,
+      path: '/api/admin/clear-database' as const,
+      input: z.object({
+        password: z.string(),
+      }),
+      responses: {
+        200: z.void(),
+        401: errorSchemas.unauthorized,
         403: errorSchemas.unauthorized,
       },
     }

@@ -272,6 +272,27 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.students.update.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const student = await storage.getStudent(req.params.id);
+      if (!student) return res.sendStatus(404);
+
+      const user = req.user as any;
+      if (user.role !== 'admin' && student.staffId.toString() !== user._id.toString()) return res.sendStatus(403);
+
+      const input = api.students.update.input.parse(req.body);
+      const updatedStudent = await storage.updateStudent(req.params.id, input);
+      res.json(updatedStudent);
+    } catch (err) {
+      console.error("[Student Update Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
   app.delete(api.students.delete.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -442,6 +463,51 @@ export async function registerRoutes(
       res.sendStatus(200);
     } catch (err) {
       console.error("[Delete Staff Error]", err);
+      res.sendStatus(500);
+    }
+  });
+
+  app.post(api.admin.resetPassword.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      if (user.role !== 'admin') return res.sendStatus(403);
+
+      const { password } = api.admin.resetPassword.input.parse(req.body);
+      const hashedPassword = await hashPassword(password);
+      
+      await storage.updateStaff(user._id, { password: hashedPassword } as any);
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[Admin Reset Password Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.sendStatus(500);
+    }
+  });
+
+  app.post(api.admin.clearDatabase.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as any;
+      if (user.role !== 'admin') return res.sendStatus(403);
+
+      const { password } = api.admin.clearDatabase.input.parse(req.body);
+      
+      // Verify admin password
+      const admin = await storage.getUser(user._id);
+      if (!admin || !admin.password || !(await comparePasswords(password, admin.password))) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+
+      await storage.clearAllStudents();
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[Clear Database Error]", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
       res.sendStatus(500);
     }
   });

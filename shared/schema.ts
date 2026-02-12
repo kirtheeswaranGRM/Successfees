@@ -38,6 +38,7 @@ export const insertStudentSchema = z.object({
   subjects: z.string(),
   totalFees: z.number(),
   balance: z.number().optional(),
+  customId: z.string().optional(),
 });
 
 export const insertPaymentSchema = z.object({
@@ -45,6 +46,7 @@ export const insertPaymentSchema = z.object({
   staffId: z.string().optional(), // Made optional as backend can inject it from session
   amount: z.number(),
   type: z.string(), // 'monthly' | 'yearly' | 'term'
+  method: z.string().default("Cash"), // 'Cash' | 'GPay'
   subjects: z.string().optional(), // Added subjects for payment
   notes: z.string().optional(),
 });

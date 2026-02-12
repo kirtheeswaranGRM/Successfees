@@ -26,6 +26,7 @@ export interface IStorage {
   getStudents(staffId?: string): Promise<StudentWithDetails[]>;
   getStudent(id: string): Promise<StudentWithDetails | undefined>;
   createStudent(student: InsertStudent): Promise<Student>;
+  updateStudent(id: string, update: Partial<Student>): Promise<Student>;
   updateStudentBalance(id: string, amountPaid: number): Promise<void>;
   deleteStudent(id: string): Promise<void>;
 
@@ -54,6 +55,7 @@ export interface IStorage {
     totalCollected: number;
     totalStudents: number;
   }>;
+  clearAllStudents(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -152,13 +154,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStudent(student: InsertStudent): Promise<Student> {
-    const newStudent = new StudentModel({
-      ...student,
-      balance: student.totalFees // Initial balance is total fees
+    const category = await CategoryModel.findById(student.categoryId);
+    if (!category) throw new Error("Category not found");
+
+    const now = new Date();
+    const year = now.getFullYear().toString().substring(2); // e.g. "26"
+    const className = category.name.toUpperCase().replace(/CLASS|GRADE/g, '').replace(/\s+/g, ''); // Ensure no spaces and no "CLASS/GRADE", e.g. "XII"
+    
+    // Count students in this category THIS YEAR to get roll number
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const count = await StudentModel.countDocuments({ 
+      categoryId: student.categoryId,
+      registrationDate: { $gte: startOfYear }
     });
-    await newStudent.save();
-    const obj = newStudent.toObject();
-    return { ...obj, _id: obj._id.toString() } as any;
+    const rollNo = (count + 1).toString().padStart(3, '0'); // e.g. "001"
+    
+    const customId = `${year}${className}${rollNo}`;
+    
+    const studentData = {
+      name: student.name,
+      phone: student.phone,
+      categoryId: student.categoryId,
+      staffId: student.staffId,
+      subjects: student.subjects,
+      totalFees: student.totalFees,
+      balance: student.balance ?? student.totalFees,
+      customId: customId
+    };
+
+    const newStudent = new StudentModel(studentData);
+    const saved = await newStudent.save();
+    const obj = saved.toObject();
+    return { ...obj, _id: obj._id.toString(), customId: obj.customId } as any;
+  }
+
+  async updateStudent(id: string, update: Partial<Student>): Promise<Student> {
+    const student = await StudentModel.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    if (!student) throw new Error("Student not found");
+    return { ...student, _id: student._id.toString() } as any;
   }
 
   async updateStudentBalance(id: string, amountPaid: number): Promise<void> {
@@ -296,6 +329,37 @@ export class DatabaseStorage implements IStorage {
       balance: { $gt: 0 }
     });
 
+    const categoryStats = await StudentModel.aggregate([
+      { $match: { staffId: new mongoose.Types.ObjectId(staffId) } },
+      {
+        $group: {
+          _id: "$categoryId",
+          studentCount: { $sum: 1 },
+          totalFees: { $sum: "$totalFees" },
+          totalBalance: { $sum: "$balance" }
+        }
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "_id",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      { $unwind: "$category" },
+      {
+        $project: {
+          _id: 1,
+          categoryName: "$category.name",
+          studentCount: 1,
+          totalFees: 1,
+          totalBalance: 1,
+          totalCollected: { $subtract: ["$totalFees", "$totalBalance"] }
+        }
+      }
+    ]);
+
     return {
       totalStudents: studentCount,
       totalCollected: totalCollectedAgg[0]?.sum || 0,
@@ -306,7 +370,8 @@ export class DatabaseStorage implements IStorage {
       yearlyCollected: totalCollectedAgg[0]?.sum || 0,
       newJoinsThisMonth,
       paidStudents,
-      remainingStudents
+      remainingStudents,
+      categoryStats
     };
   }
 
@@ -372,6 +437,11 @@ export class DatabaseStorage implements IStorage {
        totalCollected: collected[0]?.sum || 0,
        totalStudents: studentCount
      };
+  }
+
+  async clearAllStudents(): Promise<void> {
+    await PaymentModel.deleteMany({});
+    await StudentModel.deleteMany({});
   }
 }
 

@@ -71,6 +71,33 @@ export function useDeleteStudent() {
   });
 }
 
+export function useUpdateStudent() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name?: string; phone?: string; subjects?: string; totalFees?: number; balance?: number } }) => {
+      const url = buildUrl(api.students.update.path, { id });
+      const res = await fetch(url, {
+        method: api.students.update.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update student");
+      return await res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.students.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.students.get.path, variables.id] });
+      queryClient.invalidateQueries({ queryKey: [api.dashboard.summary.path] });
+      toast({ title: "Updated", description: "Student information updated" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    },
+  });
+}
+
 export function useAddPayment() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

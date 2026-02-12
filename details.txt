@@ -1,0 +1,33 @@
+# AWS Deployment Details for Success Fees Management
+
+For a small user base (10-15 users), the application will run smoothly and error-free on AWS using the following configuration.
+
+## Recommended AWS Tier: Free Tier (t3.micro)
+Since you have less than 15 users, you can utilize the AWS Free Tier for the first 12 months.
+
+### 1. Hosting (Frontend & Backend)
+- **Instance Type**: `t3.micro` (or `t2.micro` depending on region).
+- **RAM**: 1 GB. (Sufficient for Node.js and React served via Express).
+- **vCPU**: 2.
+- **Operating System**: Amazon Linux 2023 or Ubuntu 22.04 LTS.
+
+### 2. Storage
+- **EBS Volume**: 8 GB - 20 GB (General Purpose SSD gp3).
+- Node.js applications are lightweight; 8GB is plenty for the OS and the app code.
+
+### 3. Database (MongoDB)
+- **Recommendation**: **MongoDB Atlas (M0 Free Tier)**.
+- Instead of hosting MongoDB on the EC2 instance (which consumes high RAM), use MongoDB Atlas.
+- **RAM**: Shared.
+- **Storage**: 512 MB to 5 GB (Free).
+- **Benefit**: Automatic backups, security, and no maintenance.
+
+### 4. Deployment Strategy
+- **Process Manager**: Use `pm2` to keep the Node.js server running 24/7.
+- **Reverse Proxy**: Use `Nginx` to handle SSL (HTTPS) and route traffic to port 5000.
+- **Build Tool**: Run `npm run build` on the server to generate the optimized production files.
+
+## Potential Errors & Solutions
+- **Connection Errors**: Ensure your MongoDB Atlas IP Whitelist includes the EC2 Public IP.
+- **Port Errors**: Ensure AWS Security Groups allow inbound traffic on Port 80 (HTTP) and 443 (HTTPS).
+- **Environment Variables**: Ensure the `.env` file on the server contains the correct `MONGODB_URI`, `SESSION_SECRET`, and Google OAuth credentials.

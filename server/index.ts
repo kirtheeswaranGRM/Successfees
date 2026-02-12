@@ -35,7 +35,11 @@ export function log(message: string, source = "express") {
     hour12: true,
   });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
+  const sourceColor = source === "express" ? "\x1b[36m" : "\x1b[32m";
+  const reset = "\x1b[0m";
+  const timeColor = "\x1b[90m";
+
+  console.log(`${timeColor}${formattedTime}${reset} [${sourceColor}${source}${reset}] ${message}`);
 }
 
 app.use((req, res, next) => {
@@ -52,9 +56,16 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      const statusColor = res.statusCode >= 400 ? "\x1b[31m" : res.statusCode >= 300 ? "\x1b[33m" : "\x1b[32m";
+      const methodColor = "\x1b[35m";
+      const reset = "\x1b[0m";
+
+      let logLine = `${methodColor}${req.method}${reset} ${path} ${statusColor}${res.statusCode}${reset} in ${duration}ms`;
+      
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const jsonStr = JSON.stringify(capturedJsonResponse);
+        const truncated = jsonStr.length > 200 ? jsonStr.substring(0, 200) + "..." : jsonStr;
+        logLine += ` :: \x1b[90m${truncated}\x1b[0m`;
       }
 
       log(logLine);

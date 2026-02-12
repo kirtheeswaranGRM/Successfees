@@ -48,6 +48,7 @@ const studentSchema = new mongoose.Schema({
   subjects: { type: String, required: true },
   totalFees: { type: Number, required: true },
   balance: { type: Number, required: true },
+  customId: { type: String },
   registrationDate: { type: Date, default: Date.now },
 });
 
@@ -57,6 +58,7 @@ const paymentSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
   type: { type: String, required: true },
+  method: { type: String, default: "Cash" },
   subjects: { type: String },
   notes: { type: String },
 });
