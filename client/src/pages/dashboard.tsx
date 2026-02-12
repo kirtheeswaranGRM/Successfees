@@ -169,7 +169,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <motion.div variants={item}>
           <StatsCard
             title="Total Students"
@@ -180,18 +180,34 @@ export default function Dashboard() {
         </motion.div>
         <motion.div variants={item}>
           <StatsCard
-            title="Total Expected"
-            value={`₹${summary.yearlyScheduled.toLocaleString()}`}
-            icon={TrendingUp}
+            title="Month Collected"
+            value={`₹${summary.monthlyCollected.toLocaleString()}`}
+            icon={CalendarClock}
+            color="accent"
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <StatsCard
+            title="Year Collected"
+            value={`₹${summary.yearlyCollected.toLocaleString()}`}
+            icon={DollarSign}
             color="secondary"
           />
         </motion.div>
         <motion.div variants={item}>
           <StatsCard
-            title="Total Collected"
-            value={`₹${summary.yearlyCollected.toLocaleString()}`}
-            icon={DollarSign}
-            color="accent"
+            title="Weekly Avg"
+            value={`₹${summary.weeklyCollected.toLocaleString()}`}
+            icon={TrendingUp}
+            color="primary"
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <StatsCard
+            title="Total Expected"
+            value={`₹${summary.yearlyScheduled.toLocaleString()}`}
+            icon={FileText}
+            color="secondary"
           />
         </motion.div>
         <motion.div variants={item}>

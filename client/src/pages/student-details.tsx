@@ -114,19 +114,19 @@ export default function StudentDetails() {
         valign: 'middle'
       },
       columnStyles: {
-        0: { cellWidth: 50, halign: 'center' },
+        0: { cellWidth: 40, halign: 'center' },
         1: { cellWidth: 'auto', halign: 'center' },
-        2: { cellWidth: 50, halign: 'right', fontStyle: 'bold', textColor: [16, 185, 129] }
+        2: { cellWidth: 45, halign: 'right', fontStyle: 'bold', textColor: [16, 185, 129] }
       },
-      margin: { left: 20, right: 20 },
+      margin: { left: 15, right: 15 },
       tableWidth: 'auto'
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 160;
 
     // Summary Box
-    const boxWidth = 70;
-    const boxX = 120;
+    const boxWidth = 80;
+    const boxX = 115;
     doc.setFillColor(241, 245, 249); 
     doc.rect(boxX, finalY + 10, boxWidth, 45, 'F');
     doc.setDrawColor(203, 213, 225);

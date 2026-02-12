@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CreditCard, IndianRupee } from "lucide-react";
 import { type StudentWithDetails } from "@shared/schema";
 
-const formSchema = insertPaymentSchema.extend({
+const formSchema = insertPaymentSchema.omit({ staffId: true }).extend({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   studentId: z.string(),
 });
@@ -48,7 +48,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       studentId: student._id,
-      amount: 0,
+      amount: "" as any,
       type: "monthly",
       subjects: student.subjects || "",
       notes: "",
@@ -61,7 +61,7 @@ export function PaymentModal({ student }: { student: StudentWithDetails }) {
         setOpen(false);
         form.reset({
           studentId: student._id,
-          amount: 0,
+          amount: "" as any,
           type: "monthly",
           notes: "",
         });

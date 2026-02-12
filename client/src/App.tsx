@@ -7,7 +7,7 @@ import { LayoutShell } from "@/components/layout-shell";
 import NotFound from "@/pages/not-found";
 import Splash from "@/pages/splash";
 import AuthPage from "@/pages/auth";
-import Dashboard from "@/pages/dashboard";
+import SummaryPage from "@/pages/summary";
 import StudentsPage from "@/pages/students";
 import StudentDetails from "@/pages/student-details";
 import RegisterStudent from "@/pages/register-student";
@@ -22,8 +22,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       
       {/* Protected Routes wrapped in Layout */}
-      <Route path="/dashboard">
-        <LayoutShell><Dashboard /></LayoutShell>
+      <Route path="/summary">
+        <LayoutShell><SummaryPage /></LayoutShell>
       </Route>
       <Route path="/students">
         <LayoutShell><StudentsPage /></LayoutShell>

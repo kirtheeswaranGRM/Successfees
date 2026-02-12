@@ -31,6 +31,9 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // === AUTH SETUP ===
+  if (app.get("env") === "production" || process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
   const SessionStore = MemoryStore(session);
   app.use(
     session({
@@ -40,7 +43,7 @@ export async function registerRoutes(
       store: new SessionStore({
         checkPeriod: 86400000,
       }),
-      cookie: { secure: app.get("env") === "production" },
+      cookie: { secure: app.get("env") === "production" || process.env.NODE_ENV === "production" },
     })
   );
 
@@ -82,13 +85,13 @@ export async function registerRoutes(
   );
 
   // Google Strategy for Staff
-  const baseUrl = process.env.BASE_URL || "http://localhost:5000";
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID || "589564514458-sjnr0ga5v7ira3mcjeti5k3gk2drjr1q.apps.googleusercontent.com",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
-        callbackURL: `${baseUrl}/api/auth/google/callback`,
+        callbackURL: "/api/auth/google/callback",
+        proxy: true
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -159,14 +162,25 @@ export async function registerRoutes(
     })(req, res, next);
   });
 
-  app.get(api.auth.google.path, passport.authenticate("google", { scope: ["profile", "email"] }));
+  app.get(api.auth.google.path, (req, res, next) => {
+    const host = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const callbackURL = `${host}/api/auth/google/callback`;
+    passport.authenticate("google", { 
+      scope: ["profile", "email"],
+      callbackURL: callbackURL
+    } as any)(req, res, next);
+  });
 
-  app.get(api.auth.googleCallback.path, 
-    passport.authenticate("google", { failureRedirect: "/login" }),
-    (req, res) => {
-      res.redirect("/");
-    }
-  );
+  app.get(api.auth.googleCallback.path, (req, res, next) => {
+    const host = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const callbackURL = `${host}/api/auth/google/callback`;
+    passport.authenticate("google", { 
+      failureRedirect: "/login",
+      callbackURL: callbackURL
+    } as any)(req, res, next);
+  }, (req, res) => {
+    res.redirect("/");
+  });
 
   app.post(api.auth.logout.path, (req, res) => {
     req.logout((err) => {
@@ -348,6 +362,7 @@ export async function registerRoutes(
       
       res.json({
         ...stats,
+        yearlyBalance: stats.yearlyScheduled - stats.yearlyCollected,
         chartData: [
           { name: 'Monthly', amount: stats.monthlyCollected },
           { name: 'Weekly', amount: stats.weeklyCollected },

@@ -3,11 +3,23 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const mongoUri = process.env.MONGODB_URI || "mongodb+srv://successfees:successfees123@successfees.fbzb1ih.mongodb.net/?appName=Successfeest2";
-
-mongoose.connect(mongoUri)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+const mongoUri = process.env.MONGODB_URI || "mongodb+srv://successfees:successfees123@successfees.fbzb1ih.mongodb.net/?appName=Successfees";
+export async function connectDB() {
+  try {
+    await mongoose.connect(mongoUri);
+    console.log("Connected to MongoDB");
+  } catch (err: any) {
+    console.error("MongoDB connection error:", err);
+    if (err.name === 'MongooseServerSelectionError') {
+      console.error("\x1b[31m%s\x1b[0m", "ERROR: Could not connect to MongoDB Atlas cluster.");
+      console.error("\x1b[31m%s\x1b[0m", "Please ensure your IP address is whitelisted in MongoDB Atlas (Network Access).");
+      console.error("\x1b[31m%s\x1b[0m", "For deployment, you might need to whitelist 0.0.0.0/0.");
+    }
+    // Don't exit process in development, but maybe in production?
+    // For now just rethrow to catch it in index.ts
+    throw err;
+  }
+}
 
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, sparse: true },

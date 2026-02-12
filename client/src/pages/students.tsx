@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useStudents, useDeleteStudent } from "@/hooks/use-students";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, MoreVertical, Trash2, Eye } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentsPage() {
@@ -40,6 +40,7 @@ export default function StudentsPage() {
   const { mutate: deleteStudent } = useDeleteStudent();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const [, setLocation] = useLocation();
 
   const filteredStudents = students?.filter((student: any) => 
     student.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -105,7 +106,11 @@ export default function StudentsPage() {
                 const progress = (paid / student.totalFees) * 100;
                 
                 return (
-                  <TableRow key={student._id} className="group cursor-pointer hover:bg-slate-50 transition-colors">
+                  <TableRow 
+                    key={student._id} 
+                    className="group cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => setLocation(`/students/${student._id}`)}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span className="text-slate-900">{student.name}</span>
@@ -135,7 +140,7 @@ export default function StudentsPage() {
                         <span className="text-xs font-medium text-slate-600">{Math.round(progress)}%</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -144,11 +149,6 @@ export default function StudentsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <Link href={`/students/${student._id}`}>
-                            <DropdownMenuItem className="cursor-pointer">
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                          </Link>
                           {user?.role === "admin" && (
                             <>
                               <DropdownMenuSeparator />

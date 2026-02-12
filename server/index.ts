@@ -6,6 +6,7 @@ dotenv.config();
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { connectDB } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -64,6 +65,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("Failed to connect to database. Server will continue but DB operations may fail.");
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

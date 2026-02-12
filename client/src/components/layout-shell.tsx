@@ -58,7 +58,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   }
 
   const navItems = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Summary", icon: LayoutDashboard, href: "/summary" },
     { label: "Students", icon: Users, href: "/students" },
     { label: "Fee Categories", icon: CreditCard, href: "/categories" },
     { label: "Payment Records", icon: History, href: "/payments" },

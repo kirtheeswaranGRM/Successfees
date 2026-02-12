@@ -42,7 +42,7 @@ export const insertStudentSchema = z.object({
 
 export const insertPaymentSchema = z.object({
   studentId: z.string(),
-  staffId: z.string(), // Added staffId to record who took the payment
+  staffId: z.string().optional(), // Made optional as backend can inject it from session
   amount: z.number(),
   type: z.string(), // 'monthly' | 'yearly' | 'term'
   subjects: z.string().optional(), // Added subjects for payment
