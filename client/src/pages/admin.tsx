@@ -22,7 +22,7 @@ export default function AdminPage() {
   const [editingStaff, setEditingStaff] = useState<any>(null);
 
   if (user && user.role !== "admin") {
-    setLocation("/dashboard");
+    setLocation("/summary");
     return null;
   }
 
